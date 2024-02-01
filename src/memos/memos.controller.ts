@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { MemosService } from './memos.service';
-import { CreateMemoDto } from './dto/create-memo.dto';
-import { UpdateMemoDto } from './dto/update-memo.dto';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common'
+import { MemosService } from './memos.service'
+import { CreateMemoDto } from './dto/create-memo.dto'
+import { UpdateMemoDto } from './dto/update-memo.dto'
 
 @Controller('memos')
 export class MemosController {
@@ -9,26 +9,26 @@ export class MemosController {
 
   @Post()
   create(@Body() createMemoDto: CreateMemoDto) {
-    return this.memosService.create(createMemoDto);
+    return this.memosService.create(createMemoDto)
   }
 
   @Get()
   findAll() {
-    return this.memosService.findAll();
+    return this.memosService.findAll()
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.memosService.findOne(+id);
+    return this.memosService.findOne(+id)
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateMemoDto: UpdateMemoDto) {
-    return this.memosService.update(+id, updateMemoDto);
+    return this.memosService.update(+id, updateMemoDto)
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.memosService.remove(+id);
+    return this.memosService.remove(+id)
   }
 }
