@@ -1,35 +1,83 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql'
 import { SeriesService } from './series.service'
 import { Series } from './entities/series.entity'
 import { CreateSeriesInput } from './dto/create-series.input'
 import { UpdateSeriesInput } from './dto/update-series.input'
+import { IFetchSeriesReturn } from './interfaces/series-return.type'
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard'
+import { UseGuards } from '@nestjs/common'
+import { IContext } from 'src/commons/interfaces/context'
 
 @Resolver(() => Series)
 export class SeriesResolver {
-  constructor(private readonly seriesService: SeriesService) {}
+  constructor(
+    private readonly seriesService: SeriesService, //
+  ) {}
 
-  @Mutation(() => Series)
-  createSeries(@Args('createSeriesInput') createSeriesInput: CreateSeriesInput) {
-    return this.seriesService.create(createSeriesInput)
-  }
-
-  @Query(() => [Series], { name: 'series' })
-  findAll() {
+  @Query(() => [Series])
+  fetchSeriesAll(): Promise<Series[]> {
     return this.seriesService.findAll()
   }
 
-  @Query(() => Series, { name: 'series' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.seriesService.findOne(id)
+  @Query(() => [Series])
+  fetchSeriesOfTheBest(): Promise<Series[]> {
+    return this.seriesService.findBest()
   }
 
-  @Mutation(() => Series)
-  updateSeries(@Args('updateSeriesInput') updateSeriesInput: UpdateSeriesInput) {
-    return this.seriesService.update(updateSeriesInput.id, updateSeriesInput)
+  @Query(() => IFetchSeriesReturn)
+  fetchSeries(
+    @Args('seriesId') seriesId: string, //
+  ): Promise<IFetchSeriesReturn> {
+    return this.seriesService.findOne({ seriesId })
   }
 
+  @Query(() => [Series])
+  fetchFreeSeries(
+    @Args('categoryId', { nullable: true }) categoryId: string, //
+  ): Promise<Series[]> {
+    return this.seriesService.findFreeSeries({ categoryId })
+  }
+
+  @UseGuards(GqlAuthGuard('access'))
+  @Query(() => [Series])
+  fetchSeriesByUser(
+    @Context() context: IContext, //
+  ): Promise<Series[]> {
+    const user = context.req.user.userId
+
+    return this.seriesService.findByUser({ user })
+  }
+
+  @Query(() => [Series])
+  fetchSeriesByCategory(
+    @Args('categoryId', { nullable: true }) categoryId: string, //
+  ): Promise<Series[]> {
+    return this.seriesService.findByCategory({ categoryId })
+  }
+
+  @UseGuards(GqlAuthGuard('access'))
   @Mutation(() => Series)
-  removeSeries(@Args('id', { type: () => Int }) id: number) {
-    return this.seriesService.remove(id)
+  createSeries(
+    @Args('createSeriesInput') createSeriesInput: CreateSeriesInput,
+    @Context() context: IContext,
+  ): Promise<Series> {
+    const user = context.req.user.userId
+    return this.seriesService.create({ createSeriesInput, user })
+  }
+
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Series)
+  updateSeries(
+    @Args('seriesId') seriesId: string,
+    @Args('updateSeriesInput') updateSeriesInput: UpdateSeriesInput,
+  ): Promise<Series> {
+    return this.seriesService.update({ updateSeriesInput, seriesId })
+  }
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Boolean)
+  deleteSeries(
+    @Args('seriesId') seriesId: string, //
+  ): Promise<boolean> {
+    return this.seriesService.delete({ seriesId })
   }
 }
