@@ -1,35 +1,34 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql'
 import { PaymentsService } from './payments.service'
 import { Payment } from './entities/payment.entity'
 import { CreatePaymentInput } from './dto/create-payment.input'
-import { UpdatePaymentInput } from './dto/update-payment.input'
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard'
+import { UseGuards } from '@nestjs/common'
+import { IContext } from 'src/commons/interfaces/context'
 
 @Resolver(() => Payment)
 export class PaymentsResolver {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService, //
+  ) {}
 
+  @UseGuards(GqlAuthGuard('access'))
   @Mutation(() => Payment)
-  createPayment(@Args('createPaymentInput') createPaymentInput: CreatePaymentInput) {
-    return this.paymentsService.create(createPaymentInput)
+  createPaymentSeries(
+    @Args('createPaymentInput') createPaymentInput: CreatePaymentInput, //
+    @Context() context: IContext,
+  ): Promise<Payment> {
+    const user = context.req.user
+    return this.paymentsService.create({ createPaymentInput, user })
   }
 
-  @Query(() => [Payment], { name: 'payments' })
-  findAll() {
-    return this.paymentsService.findAll()
-  }
-
-  @Query(() => Payment, { name: 'payment' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.paymentsService.findOne(id)
-  }
-
+  @UseGuards(GqlAuthGuard('access'))
   @Mutation(() => Payment)
-  updatePayment(@Args('updatePaymentInput') updatePaymentInput: UpdatePaymentInput) {
-    return this.paymentsService.update(updatePaymentInput.id, updatePaymentInput)
-  }
-
-  @Mutation(() => Payment)
-  removePayment(@Args('id', { type: () => Int }) id: number) {
-    return this.paymentsService.remove(id)
+  createPaymentFreeSeries(
+    @Args({ name: 'seriesList', type: () => [String] }) seriesList: string[], //
+    @Context() context: IContext,
+  ) {
+    const user = context.req.user
+    return this.paymentsService.createFreeSeries({ seriesList, user })
   }
 }

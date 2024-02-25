@@ -1,6 +1,5 @@
-import { EntityManager } from 'typeorm'
-import { CreatePaymentInput } from '../dto/create-payments-input'
 import { IAuthUser } from 'src/commons/interfaces/context'
+import { CreatePaymentInput } from '../dto/create-payment.input'
 
 export interface IPaymentServiceFindOneByImpUid {
   impUid: string

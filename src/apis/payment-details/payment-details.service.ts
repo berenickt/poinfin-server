@@ -1,26 +1,87 @@
 import { Injectable } from '@nestjs/common'
-import { CreatePaymentDetailInput } from './dto/create-payment-detail.input'
-import { UpdatePaymentDetailInput } from './dto/update-payment-detail.input'
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm'
+import { PaymentDetail } from './entities/payment-detail.entity'
+import { EntityManager, In, Repository } from 'typeorm'
+import {
+  IPaymentDetailServiceCheckPayment,
+  IPaymentDetailServiceCreate,
+  IPaymentDetailServiceCreateWithTransaction,
+  IPaymentDetailServiceFindAll,
+  IPaymentDetailServiceFindOne,
+} from './interfaces/paymentDetails-service.interface'
+import { CheckPaymentListReturn } from './dto/checkPaymentList-return.type'
 
 @Injectable()
 export class PaymentDetailsService {
-  create(createPaymentDetailInput: CreatePaymentDetailInput) {
-    return 'This action adds a new paymentDetail'
+  constructor(
+    @InjectRepository(PaymentDetail)
+    private readonly paymentDetailRepository: Repository<PaymentDetail>,
+    @InjectEntityManager()
+    protected readonly entityManager: EntityManager,
+  ) {
+    super(entityManager)
   }
 
-  findAll() {
-    return `This action returns all paymentDetails`
+  findAll({ user }: IPaymentDetailServiceFindAll): Promise<PaymentDetail[]> {
+    return this.paymentDetailRepository.find({
+      where: { user },
+      order: { createdAt: 'desc' },
+      relations: ['series', 'user', 'payment'],
+    })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} paymentDetail`
+  async findOne({ user, seriesId }: IPaymentDetailServiceFindOne): Promise<boolean> {
+    const isVaild = await this.paymentDetailRepository.findOne({
+      where: {
+        series: { seriesId },
+        user,
+      },
+    })
+    return isVaild ? true : false
   }
 
-  update(id: number, updatePaymentDetailInput: UpdatePaymentDetailInput) {
-    return `This action updates a #${id} paymentDetail`
+  async create({ payment, user, seriesList }: IPaymentDetailServiceCreate): Promise<PaymentDetail[]> {
+    const series = []
+
+    seriesList.forEach(el => {
+      series.push({ series: el, payment, user })
+    })
+
+    const paymentDetails = await this.paymentDetailRepository.save(series)
+
+    return paymentDetails
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} paymentDetail`
+  async createWithTransaction(
+    entityManager: EntityManager,
+    { payment, user, seriesList }: IPaymentDetailServiceCreateWithTransaction,
+  ): Promise<PaymentDetail[]> {
+    const series = []
+
+    seriesList.forEach((el: string) => {
+      series.push({ series: el, payment, user })
+    })
+    const paymentDetails = this.paymentDetailRepository.create(series)
+
+    return await entityManager.save(paymentDetails)
+  }
+
+  async checkPayment({ seriesId, user }: IPaymentDetailServiceCheckPayment): Promise<CheckPaymentListReturn> {
+    const result = { status: true, seriesId: [] }
+    const paymentDetail = await this.paymentDetailRepository.find({
+      where: { series: In(seriesId), user: user },
+    })
+
+    const payment = paymentDetail.map(el => {
+      return el.paymentDetailId
+    })
+
+    if (payment.length === 0) {
+      return result
+    } else {
+      result.status = false
+      result.seriesId = [...payment]
+      return result
+    }
   }
 }

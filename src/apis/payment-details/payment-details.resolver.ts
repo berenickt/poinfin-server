@@ -1,35 +1,38 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql'
 import { PaymentDetailsService } from './payment-details.service'
 import { PaymentDetail } from './entities/payment-detail.entity'
-import { CreatePaymentDetailInput } from './dto/create-payment-detail.input'
-import { UpdatePaymentDetailInput } from './dto/update-payment-detail.input'
+import { UseGuards } from '@nestjs/common'
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard'
+import { IContext } from 'src/commons/interfaces/context'
+import { CheckPaymentListReturn } from './dto/checkPaymentList-return.type'
 
 @Resolver(() => PaymentDetail)
 export class PaymentDetailsResolver {
-  constructor(private readonly paymentDetailsService: PaymentDetailsService) {}
+  constructor(
+    private readonly paymentDetailsService: PaymentDetailsService, //
+  ) {}
 
-  @Mutation(() => PaymentDetail)
-  createPaymentDetail(@Args('createPaymentDetailInput') createPaymentDetailInput: CreatePaymentDetailInput) {
-    return this.paymentDetailsService.create(createPaymentDetailInput)
+  @UseGuards(GqlAuthGuard('access'))
+  @Query(() => [PaymentDetail])
+  fetchPaymentDetailByUser(@Context() context: IContext): Promise<PaymentDetail[]> {
+    const user = context.req.user
+    return this.paymentDetailsService.findAll({ user })
   }
 
-  @Query(() => [PaymentDetail], { name: 'paymentDetails' })
-  findAll() {
-    return this.paymentDetailsService.findAll()
+  @UseGuards(GqlAuthGuard('access'))
+  @Query(() => Boolean)
+  isVaildCreateReviewByUser(@Args('seriesId') seriesId: string, @Context() context: IContext): Promise<boolean> {
+    const user = context.req.user
+    return this.paymentDetailsService.findOne({ user, seriesId })
   }
 
-  @Query(() => PaymentDetail, { name: 'paymentDetail' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.paymentDetailsService.findOne(id)
-  }
-
-  @Mutation(() => PaymentDetail)
-  updatePaymentDetail(@Args('updatePaymentDetailInput') updatePaymentDetailInput: UpdatePaymentDetailInput) {
-    return this.paymentDetailsService.update(updatePaymentDetailInput.id, updatePaymentDetailInput)
-  }
-
-  @Mutation(() => PaymentDetail)
-  removePaymentDetail(@Args('id', { type: () => Int }) id: number) {
-    return this.paymentDetailsService.remove(id)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => CheckPaymentListReturn)
+  checkPaymentList(
+    @Args({ name: 'seriesId', type: () => [String] }) seriesId: string[],
+    @Context() context: IContext, //
+  ): Promise<CheckPaymentListReturn> {
+    const user = context.req.user
+    return this.paymentDetailsService.checkPayment({ seriesId, user })
   }
 }

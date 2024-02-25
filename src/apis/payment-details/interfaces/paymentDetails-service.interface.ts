@@ -1,4 +1,4 @@
-import { Payment } from 'src/apis/payments/entities/payments.entity'
+import { Payment } from 'src/apis/payments/entities/payment.entity'
 import { IAuthUser } from 'src/commons/interfaces/context'
 
 export interface IPaymentDetailServiceFindAll {
