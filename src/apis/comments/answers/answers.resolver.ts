@@ -1,35 +1,67 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql'
 import { AnswersService } from './answers.service'
-import { Answer } from './entities/answer.entity'
-import { CreateAnswerInput } from './dto/create-answer.input'
-import { UpdateAnswerInput } from './dto/update-answer.input'
+import { IAnswerServiceReturn } from './interface/answer-return.interface'
+import { UseGuards } from '@nestjs/common'
+import { GqlAuthGuard } from 'src/apis/auth/guards/gql-auth.guard'
+import { IContext } from 'src/commons/interfaces/context'
 
-@Resolver(() => Answer)
+@Resolver()
 export class AnswersResolver {
-  constructor(private readonly answersService: AnswersService) {}
+  constructor(
+    private readonly answersService: AnswersService, //
+  ) {}
 
-  @Mutation(() => Answer)
-  createAnswer(@Args('createAnswerInput') createAnswerInput: CreateAnswerInput) {
-    return this.answersService.create(createAnswerInput)
+  @Query(() => IAnswerServiceReturn, { nullable: true })
+  fetchPostCommentAnswer(
+    @Args('commentId') commentId: string, //
+  ): Promise<IAnswerServiceReturn | null> {
+    return this.answersService.find({ commentId })
   }
 
-  @Query(() => [Answer], { name: 'answers' })
-  findAll() {
-    return this.answersService.findAll()
+  @Query(() => [IAnswerServiceReturn])
+  fetchPostCommentAnswers(
+    @Args('postId') postId: string, //
+  ): Promise<IAnswerServiceReturn[]> {
+    return this.answersService.findAll({ postId })
   }
 
-  @Query(() => Answer, { name: 'answer' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.answersService.findOne(id)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => IAnswerServiceReturn)
+  createPostCommentAnswer(
+    @Args('commentId') commentId: string, //
+    @Args('content') content: string,
+    @Context() context: IContext,
+  ): Promise<IAnswerServiceReturn> {
+    return this.answersService.create({
+      commentId,
+      content,
+      userId: context.req.user.userId,
+    })
   }
 
-  @Mutation(() => Answer)
-  updateAnswer(@Args('updateAnswerInput') updateAnswerInput: UpdateAnswerInput) {
-    return this.answersService.update(updateAnswerInput.id, updateAnswerInput)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => IAnswerServiceReturn)
+  updatePostCommentAnswer(
+    @Args('answerId') answerId: string, //
+    @Args('newContent') newContent: string,
+    @Context() context: IContext,
+  ): Promise<IAnswerServiceReturn> {
+    return this.answersService.update({
+      answerId,
+      newContent,
+      userId: context.req.user.userId,
+    })
   }
 
-  @Mutation(() => Answer)
-  removeAnswer(@Args('id', { type: () => Int }) id: number) {
-    return this.answersService.remove(id)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Boolean)
+  deletePostCommentAnswer(
+    @Args('answerId') answerId: string, //
+    @Context() context: IContext,
+  ): Promise<boolean> {
+    return this.answersService.delete({
+      answerId,
+      userId: context.req.user.userId,
+    })
   }
 }

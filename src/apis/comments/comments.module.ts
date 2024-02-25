@@ -4,7 +4,11 @@ import { CommentsResolver } from './comments.resolver'
 import { AnswersModule } from './answers/answers.module'
 
 @Module({
-  providers: [CommentsResolver, CommentsService],
+  providers: [
+    CommentsResolver, //
+    CommentsService,
+  ],
   imports: [AnswersModule],
+  exports: [CommentsService],
 })
 export class CommentsModule {}
