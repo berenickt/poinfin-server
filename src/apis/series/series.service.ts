@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common'
-import { CreateSeriesDto } from './dto/create-series.dto'
-import { UpdateSeriesDto } from './dto/update-series.dto'
+import { CreateSeriesInput } from './dto/create-series.input'
+import { UpdateSeriesInput } from './dto/update-series.input'
 
 @Injectable()
 export class SeriesService {
-  create(createSeriesDto: CreateSeriesDto) {
+  create(createSeriesInput: CreateSeriesInput) {
     return 'This action adds a new series'
   }
 
@@ -16,7 +16,7 @@ export class SeriesService {
     return `This action returns a #${id} series`
   }
 
-  update(id: number, updateSeriesDto: UpdateSeriesDto) {
+  update(id: number, updateSeriesInput: UpdateSeriesInput) {
     return `This action updates a #${id} series`
   }
 

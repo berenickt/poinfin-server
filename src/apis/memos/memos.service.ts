@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common'
-import { CreateMemoDto } from './dto/create-memo.dto'
-import { UpdateMemoDto } from './dto/update-memo.dto'
+import { CreateMemoInput } from './dto/create-memo.input'
+import { UpdateMemoInput } from './dto/update-memo.input'
 
 @Injectable()
 export class MemosService {
-  create(createMemoDto: CreateMemoDto) {
+  create(createMemoInput: CreateMemoInput) {
     return 'This action adds a new memo'
   }
 
@@ -16,7 +16,7 @@ export class MemosService {
     return `This action returns a #${id} memo`
   }
 
-  update(id: number, updateMemoDto: UpdateMemoDto) {
+  update(id: number, updateMemoInput: UpdateMemoInput) {
     return `This action updates a #${id} memo`
   }
 

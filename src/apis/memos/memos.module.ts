@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common'
 import { MemosService } from './memos.service'
-import { MemosController } from './memos.controller'
+import { MemosResolver } from './memos.resolver'
 
 @Module({
-  controllers: [MemosController],
-  providers: [MemosService],
+  providers: [MemosResolver, MemosService],
 })
 export class MemosModule {}
