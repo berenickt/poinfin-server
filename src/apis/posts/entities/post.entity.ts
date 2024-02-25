@@ -1,5 +1,13 @@
 import { ObjectType, Field } from '@nestjs/graphql'
-import { Column, CreateDateColumn, DeleteDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Like } from 'src/apis/like/entities/like.entity'
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 
 @ObjectType()
 export class Post {
@@ -34,4 +42,8 @@ export class Post {
   @DeleteDateColumn()
   @Field(() => Date)
   deletedAt: Date
+
+  @OneToMany(() => Like, like => like.post, { nullable: true })
+  @Field(() => [Like], { nullable: true })
+  likes?: Like[]
 }

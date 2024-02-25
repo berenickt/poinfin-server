@@ -1,26 +1,27 @@
-import { Injectable } from '@nestjs/common'
-import { CreateIamportInput } from './dto/create-iamport.input'
-import { UpdateIamportInput } from './dto/update-iamport.input'
+import { Injectable, UnprocessableEntityException } from '@nestjs/common'
+import axios from 'axios'
+
+import { IIamportServiceCheckPaid } from './interfaces/iamport-service.interface'
 
 @Injectable()
 export class IamportService {
-  create(createIamportInput: CreateIamportInput) {
-    return 'This action adds a new iamport'
+  async getToken(): Promise<string> {
+    const result = await axios.post(`https://api.iamport.kr/users/getToken`, {
+      imp_key: process.env.PORTONE_KEY,
+      imp_secret: process.env.PORTONE_SECRET,
+    })
+    return result.data.response.access_token
   }
 
-  findAll() {
-    return `This action returns all iamport`
-  }
+  async checkPaid({ impUid, amount }: IIamportServiceCheckPaid): Promise<void> {
+    const token = await this.getToken()
 
-  findOne(id: number) {
-    return `This action returns a #${id} iamport`
-  }
-
-  update(id: number, updateIamportInput: UpdateIamportInput) {
-    return `This action updates a #${id} iamport`
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} iamport`
+    const result = await axios.get(
+      `https://api.iamport.kr/payments/${impUid}`, //
+      { headers: { Authorization: token } },
+    )
+    if (amount !== result.data.response.amount) {
+      throw new UnprocessableEntityException('Invalid payment information.')
+    }
   }
 }
