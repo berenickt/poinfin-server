@@ -1,5 +1,5 @@
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, Profile } from 'passport-kakao';
+import { PassportStrategy } from '@nestjs/passport'
+import { Strategy, Profile } from 'passport-kakao'
 
 export class JwtKaKaoStrategy extends PassportStrategy(Strategy, 'kakao') {
   constructor() {
@@ -8,7 +8,7 @@ export class JwtKaKaoStrategy extends PassportStrategy(Strategy, 'kakao') {
       clientSecret: process.env.KAKAO_CLIENT_SECRET,
       callbackURL: `${process.env.OAUTH_CALLBACK_URL}/login/kakao`,
       scope: ['account_email', 'profile_nickname'],
-    });
+    })
   }
 
   validate(_, __, profile: Profile) {
@@ -16,6 +16,6 @@ export class JwtKaKaoStrategy extends PassportStrategy(Strategy, 'kakao') {
       email: profile._json.kakao_account.email,
       password: 'social',
       nickname: profile.displayName,
-    };
+    }
   }
 }

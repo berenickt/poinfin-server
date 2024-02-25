@@ -1,35 +1,43 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Mutation, Args, Context } from '@nestjs/graphql'
 import { AuthService } from './auth.service'
-import { Auth } from './entities/auth.entity'
-import { CreateAuthInput } from './dto/create-auth.input'
-import { UpdateAuthInput } from './dto/update-auth.input'
+import { IContext } from 'src/commons/interfaces/context'
+import { UseGuards } from '@nestjs/common'
+import { GqlAuthGuard } from './guards/gql-auth.guard'
 
-@Resolver(() => Auth)
+@Resolver()
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
-  @Mutation(() => Auth)
-  createAuth(@Args('createAuthInput') createAuthInput: CreateAuthInput) {
-    return this.authService.create(createAuthInput)
+  @Mutation(() => String)
+  loginUser(
+    @Args('email') email: string, //
+    @Args('password') password: string,
+    @Context() context: IContext,
+  ): Promise<string> {
+    return this.authService.login({ email, password, context })
   }
 
-  @Query(() => [Auth], { name: 'auth' })
-  findAll() {
-    return this.authService.findAll()
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Boolean)
+  async logoutUser(
+    @Context() context: IContext, //
+  ): Promise<boolean> {
+    return this.authService.logout({ context })
   }
 
-  @Query(() => Auth, { name: 'auth' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.authService.findOne(id)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Boolean)
+  async resignUser(
+    @Context() context: IContext, //
+  ): Promise<boolean> {
+    return this.authService.resign({ context })
   }
 
-  @Mutation(() => Auth)
-  updateAuth(@Args('updateAuthInput') updateAuthInput: UpdateAuthInput) {
-    return this.authService.update(updateAuthInput.id, updateAuthInput)
-  }
-
-  @Mutation(() => Auth)
-  removeAuth(@Args('id', { type: () => Int }) id: number) {
-    return this.authService.remove(id)
+  @UseGuards(GqlAuthGuard('refresh'))
+  @Mutation(() => String)
+  restoreAccessToken(
+    @Context() context: IContext, //
+  ): string {
+    return this.authService.restoreAccessToken({ user: context.req.user })
   }
 }

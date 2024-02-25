@@ -1,7 +1,7 @@
-import { CACHE_MANAGER, Inject, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Cache } from 'cache-manager';
+import { CACHE_MANAGER, Inject, UnauthorizedException } from '@nestjs/common'
+import { PassportStrategy } from '@nestjs/passport'
+import { ExtractJwt, Strategy } from 'passport-jwt'
+import { Cache } from 'cache-manager'
 
 export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
   constructor(
@@ -12,23 +12,21 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: process.env.JWT_ACCESS_KEY,
       passReqToCallback: true,
-    });
+    })
   }
 
   async validate(req, payload) {
     try {
-      const accessToken = req.headers.authorization.replace('Bearer ', '');
+      const accessToken = req.headers.authorization.replace('Bearer ', '')
 
-      const redisAccess = await this.cacheManager.get(
-        `accessToken:${accessToken}`,
-      );
-      if (redisAccess) throw new UnauthorizedException();
+      const redisAccess = await this.cacheManager.get(`accessToken:${accessToken}`)
+      if (redisAccess) throw new UnauthorizedException()
 
       return {
         userId: payload.sub,
-      };
+      }
     } catch (e) {
-      throw e;
+      throw e
     }
   }
 }

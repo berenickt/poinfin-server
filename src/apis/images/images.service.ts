@@ -1,26 +1,31 @@
 import { Injectable } from '@nestjs/common'
-import { CreateImageInput } from './dto/create-image.input'
-import { UpdateImageInput } from './dto/update-image.input'
+import { S3 } from 'aws-sdk'
+
+import * as crypto from 'crypto'
 
 @Injectable()
 export class ImagesService {
-  create(createImageInput: CreateImageInput) {
-    return 'This action adds a new image'
-  }
+  async uploadFile({ file }) {
+    const uniqueId = crypto.randomUUID()
 
-  findAll() {
-    return `This action returns all images`
-  }
+    const s3 = new S3({
+      accessKeyId: process.env.AWS_ACCESS_KEY,
+      secretAccessKey: process.env.AWS_SECRET_KEY,
+      region: 'ap-northeast-2',
+    })
 
-  findOne(id: number) {
-    return `This action returns a #${id} image`
-  }
+    const { createReadStream, filename } = file
+    const fileStream = createReadStream()
 
-  update(id: number, updateImageInput: UpdateImageInput) {
-    return `This action updates a #${id} image`
-  }
+    const params = {
+      Bucket: 'poinfin-image-bucket',
+      Key: `image/${uniqueId}-${filename}`,
+      Body: fileStream,
+      ContentType: 'image/png',
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} image`
+    const response = await s3.upload(params).promise()
+
+    return response.Location
   }
 }
