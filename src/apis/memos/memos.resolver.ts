@@ -1,35 +1,40 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql'
 import { MemosService } from './memos.service'
 import { Memo } from './entities/memo.entity'
-import { CreateMemoInput } from './dto/create-memo.input'
-import { UpdateMemoInput } from './dto/update-memo.input'
+import { UseGuards } from '@nestjs/common'
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard'
+import { IContext } from 'src/commons/interfaces/context'
 
 @Resolver(() => Memo)
 export class MemosResolver {
-  constructor(private readonly memosService: MemosService) {}
+  constructor(
+    private readonly memoService: MemosService, //
+  ) {}
 
+  @UseGuards(GqlAuthGuard('access'))
   @Mutation(() => Memo)
-  createMemo(@Args('createMemoInput') createMemoInput: CreateMemoInput) {
-    return this.memosService.create(createMemoInput)
+  async createPostMemo(@Args('postId') postId: string, @Args('parse') parse: string, @Context() context: IContext) {
+    return this.memoService.createMemo({
+      parse,
+      postId,
+      userId: context.req.user.userId,
+    })
   }
 
-  @Query(() => [Memo], { name: 'memos' })
-  findAll() {
-    return this.memosService.findAll()
+  @UseGuards(GqlAuthGuard('access'))
+  @Query(() => [Memo])
+  async fetchPostMemos(
+    @Context() context: IContext, //
+  ): Promise<Memo[]> {
+    return this.memoService.fetchMemos({ userId: context.req.user.userId })
   }
 
-  @Query(() => Memo, { name: 'memo' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.memosService.findOne(id)
-  }
-
-  @Mutation(() => Memo)
-  updateMemo(@Args('updateMemoInput') updateMemoInput: UpdateMemoInput) {
-    return this.memosService.update(updateMemoInput.id, updateMemoInput)
-  }
-
-  @Mutation(() => Memo)
-  removeMemo(@Args('id', { type: () => Int }) id: number) {
-    return this.memosService.remove(id)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Boolean)
+  deletePostMemo(@Args('memoId') memoId: string, @Context() context: IContext): Promise<boolean> {
+    return this.memoService.deleteMemo({
+      memoId,
+      userId: context.req.user.userId,
+    })
   }
 }

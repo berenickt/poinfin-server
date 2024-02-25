@@ -1,26 +1,72 @@
-import { Injectable } from '@nestjs/common'
-import { CreateMemoInput } from './dto/create-memo.input'
-import { UpdateMemoInput } from './dto/update-memo.input'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { Memo } from './entities/memo.entity'
+import { UsersService } from '../users/users.service'
+import { PostsService } from '../posts/posts.service'
+import { IMemoServiceCreate } from './interfaces/memos-service.interface'
 
 @Injectable()
 export class MemosService {
-  create(createMemoInput: CreateMemoInput) {
-    return 'This action adds a new memo'
+  constructor(
+    @InjectRepository(Memo)
+    private readonly memosRepository: Repository<Memo>, //
+
+    private readonly usersService: UsersService,
+
+    private readonly postsService: PostsService, //
+  ) {}
+
+  async createMemo({
+    userId, //
+    postId,
+    parse,
+  }: IMemoServiceCreate): Promise<Memo> {
+    const user = await this.usersService.findOneById({ userId })
+    if (!user) throw new UnauthorizedException()
+
+    const post = await this.postsService.findOne({ postId })
+    if (!post) throw new Error("post dosen't exist")
+
+    const createdMemo = this.memosRepository.create({
+      parse,
+      title: post.title,
+      author: post.user.nickname,
+      user,
+    })
+
+    const result = await this.memosRepository.save(createdMemo)
+
+    return result
   }
 
-  findAll() {
-    return `This action returns all memos`
+  async fetchMemos({
+    userId, //
+  }): Promise<Memo[]> {
+    const user = await this.usersService.findOneById({ userId })
+    if (!user) throw new UnauthorizedException()
+
+    const result = await this.memosRepository.find({
+      order: { createdAt: 'ASC' },
+      relations: ['user'],
+    })
+
+    return result.filter(el => el.user.userId === user.userId)
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} memo`
-  }
+  async deleteMemo({
+    memoId, //
+    userId,
+  }): Promise<boolean> {
+    const user = await this.usersService.findOneById({ userId })
+    if (!user) throw new UnauthorizedException()
 
-  update(id: number, updateMemoInput: UpdateMemoInput) {
-    return `This action updates a #${id} memo`
-  }
+    const memo = await this.memosRepository.softDelete({
+      memoId,
+      user: userId,
+    })
 
-  remove(id: number) {
-    return `This action removes a #${id} memo`
+    return memo.affected ? true : false
   }
 }
