@@ -1,19 +1,15 @@
 import { Module } from '@nestjs/common'
 import { AppController } from './app.controller'
-import { AppService } from './app.service'
-import { PostsModule } from './posts/posts.module'
-import { UsersModule } from './users/users.module'
-import { AuthModule } from './auth/auth.module'
-import { SeriesModule } from './series/series.module'
-import { PostsCommentsModule } from './posts-comments/posts-comments.module'
-import { PostsAnswersModule } from './posts-answers/posts-answers.module'
-import { PostsCommentsModule } from './posts-comments/posts-comments.module'
-import { SeriesReviewModule } from './series-review/series-review.module'
-import { SeriesReviewsModule } from './series-reviews/series-reviews.module'
-import { PostsAnswersModule } from './posts-answers/posts-answers.module'
-import { MemosModule } from './memos/memos.module'
-import { PaymentsModule } from './payments/payments.module'
-import { PostsCommentsModule } from './posts-comments/posts-comments.module'
+import { PostsModule } from './apis/posts/posts.module'
+import { UsersModule } from './apis/users/users.module'
+import { AuthModule } from './apis/auth/auth.module'
+import { SeriesModule } from './apis/series/series.module'
+
+import { SeriesReviewModule } from './apis/series-review/series-review.module'
+import { PostsAnswersModule } from './apis/posts-answers/posts-answers.module'
+import { MemosModule } from './apis/memos/memos.module'
+import { PaymentsModule } from './apis/payments/payments.module'
+import { PostsCommentsModule } from './apis/posts-comments/posts-comments.module'
 
 @Module({
   imports: [
@@ -22,13 +18,12 @@ import { PostsCommentsModule } from './posts-comments/posts-comments.module'
     AuthModule,
     SeriesModule,
     PostsCommentsModule,
-    SeriesReviewsModule,
     PostsAnswersModule,
     MemosModule,
     PaymentsModule,
     SeriesReviewModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}
