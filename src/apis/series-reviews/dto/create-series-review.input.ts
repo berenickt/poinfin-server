@@ -1,7 +1,13 @@
-import { InputType, Int, Field } from '@nestjs/graphql'
+import { InputType, Field, Float } from '@nestjs/graphql'
 
 @InputType()
 export class CreateSeriesReviewInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number
+  @Field(() => String, { description: 'Example field (placeholder)' })
+  content: string
+
+  @Field(() => Float, { description: 'Example field (placeholder)' })
+  rating: number
+
+  @Field(() => String, { description: 'Example field (placeholder)' })
+  seriesId: string
 }

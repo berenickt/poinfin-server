@@ -1,26 +1,42 @@
 import { Injectable } from '@nestjs/common'
-import { CreateTagInput } from './dto/create-tag.input'
-import { UpdateTagInput } from './dto/update-tag.input'
+
+import { InjectRepository } from '@nestjs/typeorm'
+import { In, InsertResult, Repository } from 'typeorm'
+import { Tag } from './entities/tag.entity'
+import { ITagsServiceBulkInsert, ITagsServiceFindByNames } from './interfaces/tag-service.interface'
 
 @Injectable()
 export class TagsService {
-  create(createTagInput: CreateTagInput) {
-    return 'This action adds a new tag'
+  constructor(
+    @InjectRepository(Tag)
+    private readonly tagsRepository: Repository<Tag>,
+  ) {}
+
+  async findByNames({
+    tagNames, //
+  }: ITagsServiceFindByNames): Promise<Tag[]> {
+    return await this.tagsRepository.find({
+      where: { name: In(tagNames) },
+    })
   }
 
-  findAll() {
-    return `This action returns all tags`
+  bulkInsert({ names }: ITagsServiceBulkInsert): Promise<InsertResult> {
+    return this.tagsRepository.insert(names)
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} tag`
-  }
+  async tagGenerator({ tags }) {
+    const tagNames = tags ? tags.map(el => el.replace('#', '')) : []
+    const prevTags = await this.findByNames({ tagNames })
 
-  update(id: number, updateTagInput: UpdateTagInput) {
-    return `This action updates a #${id} tag`
-  }
+    const tagsBucket = []
+    tagNames.forEach(el => {
+      const isExist = prevTags.find(prev => el === prev.name)
+      if (!isExist) tagsBucket.push({ name: el })
+    })
 
-  remove(id: number) {
-    return `This action removes a #${id} tag`
+    const newTags = await this.bulkInsert({ names: tagsBucket })
+    const completeTags = [...prevTags, ...newTags.identifiers]
+
+    return completeTags
   }
 }

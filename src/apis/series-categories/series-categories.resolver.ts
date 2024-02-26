@@ -1,35 +1,29 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql'
 import { SeriesCategoriesService } from './series-categories.service'
 import { SeriesCategory } from './entities/series-category.entity'
-import { CreateSeriesCategoryInput } from './dto/create-series-category.input'
-import { UpdateSeriesCategoryInput } from './dto/update-series-category.input'
 
 @Resolver(() => SeriesCategory)
 export class SeriesCategoriesResolver {
-  constructor(private readonly seriesCategoriesService: SeriesCategoriesService) {}
+  constructor(
+    private readonly seriesCategoriesService: SeriesCategoriesService, //
+  ) {}
 
-  @Mutation(() => SeriesCategory)
-  createSeriesCategory(@Args('createSeriesCategoryInput') createSeriesCategoryInput: CreateSeriesCategoryInput) {
-    return this.seriesCategoriesService.create(createSeriesCategoryInput)
-  }
-
-  @Query(() => [SeriesCategory], { name: 'seriesCategories' })
-  findAll() {
+  @Query(() => [SeriesCategory])
+  fetchSeriesCategories(): Promise<SeriesCategory[]> {
     return this.seriesCategoriesService.findAll()
   }
 
-  @Query(() => SeriesCategory, { name: 'seriesCategory' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.seriesCategoriesService.findOne(id)
+  @Query(() => SeriesCategory)
+  fetchSeriesCategory(
+    @Args('categoryId') categoryId: string, //
+  ): Promise<SeriesCategory> {
+    return this.seriesCategoriesService.findOne({ categoryId })
   }
 
   @Mutation(() => SeriesCategory)
-  updateSeriesCategory(@Args('updateSeriesCategoryInput') updateSeriesCategoryInput: UpdateSeriesCategoryInput) {
-    return this.seriesCategoriesService.update(updateSeriesCategoryInput.id, updateSeriesCategoryInput)
-  }
-
-  @Mutation(() => SeriesCategory)
-  removeSeriesCategory(@Args('id', { type: () => Int }) id: number) {
-    return this.seriesCategoriesService.remove(id)
+  createSeriesCategory(
+    @Args('name') name: string, //
+  ): Promise<SeriesCategory> {
+    return this.seriesCategoriesService.create({ name })
   }
 }

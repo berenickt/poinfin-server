@@ -1,26 +1,74 @@
-import { Injectable } from '@nestjs/common'
-import { CreateUserInput } from './dto/create-user.input'
-import { UpdateUserInput } from './dto/update-user.input'
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { User } from './entities/user.entity'
+import {
+  IUsersServiceCreate,
+  IUsersServiceDelete,
+  IUsersServiceFindOneByEmail,
+  IUsersServiceFindOneById,
+  IUsersServiceUpdate,
+  IUsersServiceUpdatePassword,
+} from './interfaces/users-service.interface'
+import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class UsersService {
-  create(createUserInput: CreateUserInput) {
-    return 'This action adds a new user'
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>, //
+  ) {}
+
+  findOneByEmail({ email }: IUsersServiceFindOneByEmail): Promise<User> {
+    return this.usersRepository.findOne({ where: { email } })
   }
 
-  findAll() {
-    return `This action returns all users`
+  async findOneById({ userId }: IUsersServiceFindOneById): Promise<User> {
+    const result = await this.usersRepository.findOne({ where: { userId } })
+    return result
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`
+  async create({ createUserInput }: IUsersServiceCreate): Promise<User> {
+    const { email, nickname, password } = createUserInput
+
+    const user = await this.findOneByEmail({ email })
+    if (user) throw new ConflictException('이미 등록된 이메일입니다.')
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+    return this.usersRepository.save({
+      email,
+      password: hashedPassword,
+      nickname,
+    })
   }
 
-  update(id: number, updateUserInput: UpdateUserInput) {
-    return `This action updates a #${id} user`
+  async update({ userId, updateUserInput }: IUsersServiceUpdate): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { userId } })
+    return this.usersRepository.save({
+      ...user,
+      ...updateUserInput,
+    })
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`
+  async updatePassword({ currentPassword, newPassword, userId }: IUsersServiceUpdatePassword): Promise<boolean> {
+    const user = await this.findOneById({ userId })
+    const isCorrect = await bcrypt.compare(currentPassword, user.password)
+
+    if (!isCorrect) throw new UnauthorizedException('기존 비밀번호가 틀립니다.')
+
+    const isDuplicated = await bcrypt.compare(newPassword, user.password)
+
+    if (isDuplicated) throw new ForbiddenException('기존 비밀번호와 동일한 비밀번호로 수정할 수 없습니다.')
+
+    const password = await bcrypt.hash(newPassword, 10)
+    const result = await this.usersRepository.update({ userId }, { password })
+    return result.affected ? true : false
+  }
+
+  async resign({ userId }: IUsersServiceDelete): Promise<boolean> {
+    const result = await this.usersRepository.softDelete({
+      userId,
+    })
+    return result.affected ? true : false
   }
 }

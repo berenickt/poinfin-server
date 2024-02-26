@@ -1,26 +1,24 @@
 import { Injectable } from '@nestjs/common'
-import { CreateSeriesCategoryInput } from './dto/create-series-category.input'
-import { UpdateSeriesCategoryInput } from './dto/update-series-category.input'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { SeriesCategory } from './entities/series-category.entity'
 
 @Injectable()
 export class SeriesCategoriesService {
-  create(createSeriesCategoryInput: CreateSeriesCategoryInput) {
-    return 'This action adds a new seriesCategory'
+  constructor(
+    @InjectRepository(SeriesCategory)
+    private readonly seriesCategoryRepository: Repository<SeriesCategory>,
+  ) {}
+
+  findAll(): Promise<SeriesCategory[]> {
+    return this.seriesCategoryRepository.find()
   }
 
-  findAll() {
-    return `This action returns all seriesCategories`
+  findOne({ categoryId }): Promise<SeriesCategory> {
+    return this.seriesCategoryRepository.findOne({ where: { categoryId } })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} seriesCategory`
-  }
-
-  update(id: number, updateSeriesCategoryInput: UpdateSeriesCategoryInput) {
-    return `This action updates a #${id} seriesCategory`
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} seriesCategory`
+  create({ name }): Promise<SeriesCategory> {
+    return this.seriesCategoryRepository.save({ name })
   }
 }

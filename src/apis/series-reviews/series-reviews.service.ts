@@ -1,26 +1,111 @@
-import { Injectable } from '@nestjs/common'
-import { CreateSeriesReviewInput } from './dto/create-series-review.input'
-import { UpdateSeriesReviewInput } from './dto/update-series-review.input'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { SeriesReview } from './entities/series-review.entity'
+import { PaymentDetailsService } from '../payment-details/payment-details.service'
+import {
+  ISeriesReviewsServiceCreate,
+  ISeriesReviewsServiceDelete,
+  ISeriesReviewsServiceFindBySeries,
+  ISeriesReviewsServiceFindBySeriesAndUser,
+  ISeriesReviewsServiceFindOne,
+  ISeriesReviewsServiceFindSeriesRating,
+  ISeriesReviewsServiceUpdate,
+} from './interfaces/seriesReviews-service.interface'
 
 @Injectable()
 export class SeriesReviewsService {
-  create(createSeriesReviewInput: CreateSeriesReviewInput) {
-    return 'This action adds a new seriesReview'
+  constructor(
+    @InjectRepository(SeriesReview)
+    private readonly seriesReviewRepository: Repository<SeriesReview>,
+
+    private readonly paymentDetailsService: PaymentDetailsService,
+  ) {}
+
+  findAll(): Promise<SeriesReview[]> {
+    return this.seriesReviewRepository.find({ relations: ['series', 'user'] })
   }
 
-  findAll() {
-    return `This action returns all seriesReviews`
+  findOne({ reviewId }: ISeriesReviewsServiceFindOne): Promise<SeriesReview> {
+    return this.seriesReviewRepository.findOne({
+      where: { reviewId },
+      relations: ['series', 'user'],
+    })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} seriesReview`
+  findBySeries({ seriesId }: ISeriesReviewsServiceFindBySeries): Promise<SeriesReview[]> {
+    return this.seriesReviewRepository.find({
+      where: { series: { seriesId } },
+      relations: ['series', 'user'],
+    })
+  }
+  findBySeriesAndUser({ seriesId, user }: ISeriesReviewsServiceFindBySeriesAndUser): Promise<SeriesReview> {
+    return this.seriesReviewRepository.findOne({
+      where: { series: { seriesId }, user: { userId: user.userId } },
+      relations: ['series', 'user'],
+    })
   }
 
-  update(id: number, updateSeriesReviewInput: UpdateSeriesReviewInput) {
-    return `This action updates a #${id} seriesReview`
+  async findSeriesRating({ seriesId }: ISeriesReviewsServiceFindSeriesRating) {
+    const result = await this.seriesReviewRepository
+      .createQueryBuilder('review')
+      .select('Avg(review.rating)', 'rating')
+      .leftJoinAndSelect('review.series', 'series')
+      .where('review.series = :seriesId', { seriesId })
+      .getRawOne()
+
+    console.log(result.rating)
+
+    return result.rating
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} seriesReview`
+  async create({ createSeriesReviewInput, user }: ISeriesReviewsServiceCreate): Promise<SeriesReview> {
+    const { seriesId, ...rest } = createSeriesReviewInput
+
+    const payment = await this.paymentDetailsService.findOne({
+      seriesId,
+      user,
+    })
+    if (!payment) {
+      throw new Error('No permissions')
+    }
+
+    const review = await this.findBySeriesAndUser({
+      seriesId,
+      user,
+    })
+
+    if (review) {
+      throw new Error('Review already exists')
+    }
+
+    return this.seriesReviewRepository.save({
+      ...rest,
+      series: { seriesId },
+      user: { userId: user.userId },
+    })
+  }
+
+  async update({ user, reviewId, updateSeriesReviewInput }: ISeriesReviewsServiceUpdate): Promise<SeriesReview> {
+    const review = await this.findOne({ reviewId })
+
+    if (review && review.user.userId !== user.userId) {
+      throw new UnauthorizedException()
+    }
+
+    return this.seriesReviewRepository.save({
+      ...review,
+      ...updateSeriesReviewInput,
+    })
+  }
+
+  async delete({ reviewId, user }: ISeriesReviewsServiceDelete): Promise<boolean> {
+    const review = await this.findOne({ reviewId })
+
+    if (review && review.user.userId !== user.userId) {
+      throw new UnauthorizedException()
+    }
+    const result = await this.seriesReviewRepository.delete({ reviewId })
+    return result.affected ? true : false
   }
 }

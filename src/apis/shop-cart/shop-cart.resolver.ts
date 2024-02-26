@@ -1,35 +1,42 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql'
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql'
 import { ShopCartService } from './shop-cart.service'
-import { ShopCart } from './entities/shop-cart.entity'
-import { CreateShopCartInput } from './dto/create-shop-cart.input'
-import { UpdateShopCartInput } from './dto/update-shop-cart.input'
+import { UseGuards } from '@nestjs/common'
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard'
+import { Series } from '../series/entities/series.entity'
+import { IContext } from 'src/commons/interfaces/context'
 
-@Resolver(() => ShopCart)
+@Resolver()
 export class ShopCartResolver {
-  constructor(private readonly shopCartService: ShopCartService) {}
+  constructor(
+    private readonly shoppingCartService: ShopCartService, //
+  ) {}
 
-  @Mutation(() => ShopCart)
-  createShopCart(@Args('createShopCartInput') createShopCartInput: CreateShopCartInput) {
-    return this.shopCartService.create(createShopCartInput)
+  @UseGuards(GqlAuthGuard('access'))
+  @Query(() => [Series])
+  fetchShoppingCart(
+    @Context() context: IContext, //
+  ): Promise<Series[]> {
+    const user = context.req.user
+    return this.shoppingCartService.findAll({ user })
   }
 
-  @Query(() => [ShopCart], { name: 'shopCart' })
-  findAll() {
-    return this.shopCartService.findAll()
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Series)
+  insertSeriesInCart(
+    @Args('seriesId') seriesId: string, //
+    @Context() context: IContext,
+  ): Promise<Series> {
+    const user = context.req.user
+    return this.shoppingCartService.insert({ seriesId, user })
   }
 
-  @Query(() => ShopCart, { name: 'shopCart' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.shopCartService.findOne(id)
-  }
-
-  @Mutation(() => ShopCart)
-  updateShopCart(@Args('updateShopCartInput') updateShopCartInput: UpdateShopCartInput) {
-    return this.shopCartService.update(updateShopCartInput.id, updateShopCartInput)
-  }
-
-  @Mutation(() => ShopCart)
-  removeShopCart(@Args('id', { type: () => Int }) id: number) {
-    return this.shopCartService.remove(id)
+  @UseGuards(GqlAuthGuard('access'))
+  @Mutation(() => Boolean)
+  deleteSeriesInCart(
+    @Args('seriesId') seriesId: string, //
+    @Context() context: IContext,
+  ): Promise<boolean> {
+    const user = context.req.user
+    return this.shoppingCartService.deleteSeries({ seriesId, user })
   }
 }
