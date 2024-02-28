@@ -5,10 +5,10 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 @ObjectType()
 export class SeriesCategory {
   @PrimaryGeneratedColumn('uuid')
-  @Field(() => String, { description: 'Example field (placeholder)' })
+  @Field(() => String, { description: '시리즈 카테고리 ID' })
   categoryId: string
 
   @Column()
-  @Field(() => String, { description: 'Example field (placeholder)' })
+  @Field(() => String, { description: '시리즈 카테고리 이름' })
   name: string
 }

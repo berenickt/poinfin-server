@@ -15,6 +15,11 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
     })
   }
 
+  /****
+   * @description JWT 토큰을 검증하는 메서드
+   * @param req
+   * @param payload
+   */
   async validate(req, payload) {
     try {
       const accessToken = req.headers.authorization.replace('Bearer ', '')

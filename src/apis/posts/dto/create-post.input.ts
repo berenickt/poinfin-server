@@ -1,10 +1,11 @@
-import { InputType, Int, Field } from '@nestjs/graphql'
+import { InputType, Field } from '@nestjs/graphql'
 
-@InputType()
+/**** DTO (data transfer object)
+ * 데이터 전송 객체. 즉, 네트워크 간에 데이터를 어떤 식으로 보낼지를 정의한 객체
+ * @description 포스트 생성 DTO
+ */
+@InputType() // GraphQL InputType 데코레이터로, 해당 클래스를 GraphQL InputType으로 등록
 export class CreatePostInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number
-
   @Field(() => String, { description: '포스트 제목' })
   title: string
 

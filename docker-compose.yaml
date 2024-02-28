@@ -17,7 +17,7 @@ services:
 
   # 내 데이터베이스 컴퓨터이름
   my-database:
-    # 맥 M1 칩을 사용하시는 분이라면 추가 설정
+    # 맥 M1 칩을 사용하면 추가 설정
     platform: linux/x86_64
     # mysql을 사용하기에 mysql 최신버전으로 설정
     image: mysql:latest
